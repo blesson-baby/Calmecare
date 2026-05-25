@@ -1,7 +1,13 @@
 import axios from "axios";
 
+const currentOrigin =
+  typeof window !== "undefined" && window.location?.origin
+    ? window.location.origin
+    : "";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || `${currentOrigin}/api`;
+
 const API = axios.create({
-  baseURL: "http://localhost:5000/api"
+  baseURL: apiBaseUrl
 });
 
 // 🔐 Attach token automatically

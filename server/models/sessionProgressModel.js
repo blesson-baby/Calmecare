@@ -1,36 +1,38 @@
 const mongoose = require("mongoose");
 
-const sessionProgressSchema = new mongoose.Schema({
-  patient: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
+const sessionProgressSchema = new mongoose.Schema(
+  {
+    session: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Session",
+      required: true
+    },
+    patient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+    psychologist: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+    role: {
+      type: String,
+      enum: ["psychologist", "clinicalpsychologist"],
+      required: true
+    },
+    moodScore: Number,
+    anxietyLevel: Number,
+    stressLevel: Number,
+    depressionLevel: Number,
+    notes: String,
+    warningTriggered: {
+      type: Boolean,
+      default: false
+    }
   },
-
-  doctor: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
-
-  role: {
-    type: String,
-    enum: ["psychologist", "clinical"],
-    required: true
-  },
-
-  moodScore: Number,
-  anxietyLevel: Number,
-  stressLevel: Number,
-  depressionLevel: Number,
-
-  notes: String,
-
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-
-});
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("SessionProgress", sessionProgressSchema);

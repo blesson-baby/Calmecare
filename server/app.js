@@ -25,6 +25,9 @@ app.use("/api/referrals", referralRoutes);
 const adminRoutes = require("./routes/adminRoutes");
 app.use("/api/admin", adminRoutes);
 
+const patientRoutes = require("./routes/patientRoutes");
+app.use("/api/patients", patientRoutes);
+
 // ✅ Test route
 app.get("/", (req, res) => {
   res.json({ message: "CalmCare API is running" });

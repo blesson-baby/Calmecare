@@ -2,24 +2,40 @@ const express = require("express");
 const router = express.Router();
 
 const {
-  assignPsychologist,
-  assignClinicalPsychologist
+  getPendingDoctors,
+  updateDoctorStatus,
+  getAssignmentData,
+  assignPsychologist
 } = require("../controllers/adminController");
-
 const { protect } = require("../middleware/authMiddleware");
 const { authorizeRoles } = require("../middleware/roleMiddleware");
 
-// Only admin can assign
-router.post("/assign-psychologist",
+router.get(
+  "/pending-doctors",
+  protect,
+  authorizeRoles("admin"),
+  getPendingDoctors
+);
+
+router.put(
+  "/doctor-status/:doctorId",
+  protect,
+  authorizeRoles("admin"),
+  updateDoctorStatus
+);
+
+router.get(
+  "/assignment-data",
+  protect,
+  authorizeRoles("admin"),
+  getAssignmentData
+);
+
+router.post(
+  "/assign-psychologist",
   protect,
   authorizeRoles("admin"),
   assignPsychologist
-);
-
-router.post("/assign-clinical",
-  protect,
-  authorizeRoles("admin"),
-  assignClinicalPsychologist
 );
 
 module.exports = router;

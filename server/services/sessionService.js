@@ -1,9 +1,16 @@
 const Session = require("../models/sessionModel");
 
 exports.getSessionById = async (sessionId) => {
-  return await Session.findById(sessionId);
+  return Session.findById(sessionId);
 };
 
-exports.verifyDoctorAccess = (session, user) => {
-  return session.doctor.toString() === user._id.toString();
+exports.verifyDoctorAccess = (session, user, patient) => {
+  if (session.psychologist?.toString() === user._id.toString()) {
+    return true;
+  }
+
+  return (
+    user.role === "clinicalpsychologist" &&
+    patient?.assignedClinicalPsychologist?.toString() === user._id.toString()
+  );
 };

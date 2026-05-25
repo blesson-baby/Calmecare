@@ -1,21 +1,29 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/login";
 import ProtectedRoute from "./components/ProtectedRoute";
+import "./App.css";
 
-// Dummy dashboards (we'll build later)
 import PatientDashboard from "./pages/Patientdashboard";
 import PsychologistDashboard from "./pages/Psychologistdashboard";
 import ClinicalDashboard from "./pages/Clinicaldashboard";
+import AdminDashboard from "./pages/Admindashboard";
+import VideoCall from "./pages/VideoCall";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* Public Route */}
         <Route path="/" element={<Login />} />
 
-        {/* Patient */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/patient"
           element={
@@ -25,7 +33,6 @@ function App() {
           }
         />
 
-        {/* Psychologist */}
         <Route
           path="/psychologist"
           element={
@@ -35,7 +42,6 @@ function App() {
           }
         />
 
-        {/* Clinical Psychologist */}
         <Route
           path="/clinical"
           element={
@@ -45,6 +51,14 @@ function App() {
           }
         />
 
+        <Route
+          path="/session/:sessionId/call"
+          element={
+            <ProtectedRoute>
+              <VideoCall />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

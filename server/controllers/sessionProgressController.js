@@ -1,30 +1,19 @@
-const { getSessionById, verifyDoctorAccess } = require("../services/sessionService");
-const { createProgress, getProgressByQuery } = require("../services/progressService");
+const {
+  getSessionById,
+  verifyDoctorAccess
+} = require("../services/sessionService");
+const {
+  createProgress,
+  getProgressByQuery,
+  findDuplicateProgress,
+  getProgressById,
+  deleteProgressById
+} = require("../services/progressService");
 const { checkSeverity } = require("../utils/severityCheck");
-const Referral = require("../models/referralModel");
-
-exports.createAutoReferral = async ({ patient, psychologist, session }) => {
-  return await Referral.create({
-    patient,
-    psychologist,
-    session,
-    reason: "High severity detected",
-    status: "pending"
-  });
-};
-
-exports.updateReferralStatus = async (referralId, data) => {
-  return await Referral.findByIdAndUpdate(referralId, data, {
-    new: true
-  });
-};
-
-
-// ================= ADD SESSION PROGRESS =================
+const User = require("../models/userModel");
 
 exports.addSessionProgress = async (req, res) => {
   try {
-
     const {
       sessionId,
       moodScore,
@@ -34,10 +23,9 @@ exports.addSessionProgress = async (req, res) => {
       notes
     } = req.body;
 
-    // 🔒 Role check
     if (
       req.user.role !== "psychologist" &&
-      req.user.role !== "clinicalPsychologist"
+      req.user.role !== "clinicalpsychologist"
     ) {
       return res.status(403).json({
         success: false,
@@ -45,7 +33,6 @@ exports.addSessionProgress = async (req, res) => {
       });
     }
 
-    // 🔍 Get session
     const session = await getSessionById(sessionId);
 
     if (!session) {
@@ -55,8 +42,26 @@ exports.addSessionProgress = async (req, res) => {
       });
     }
 
-    // 🔒 Ownership check
-    const hasAccess = verifyDoctorAccess(session, req.user);
+    const patient = await User.findById(session.patient);
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found"
+      });
+    }
+
+    if (
+      patient.assignedClinicalPsychologist &&
+      req.user.role === "psychologist"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Case transferred to clinical psychologist"
+      });
+    }
+
+    const hasAccess = verifyDoctorAccess(session, req.user, patient);
 
     if (!hasAccess) {
       return res.status(403).json({
@@ -65,7 +70,13 @@ exports.addSessionProgress = async (req, res) => {
       });
     }
 
-    // 🧠 Severity detection
+    if (session.status !== "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Progress can only be added after the consultation is completed"
+      });
+    }
+
     const warningTriggered = checkSeverity({
       moodScore,
       anxietyLevel,
@@ -73,11 +84,30 @@ exports.addSessionProgress = async (req, res) => {
       depressionLevel
     });
 
-    // 💾 Save progress
+    const duplicateProgress = await findDuplicateProgress({
+      session: sessionId,
+      psychologist: req.user._id,
+      role: req.user.role,
+      moodScore,
+      anxietyLevel,
+      stressLevel,
+      depressionLevel,
+      notes: notes || "",
+      createdAfter: new Date(Date.now() - 30000)
+    });
+
+    if (duplicateProgress) {
+      return res.status(409).json({
+        success: false,
+        message: "This progress entry looks like a duplicate from a recent click, so it was not saved again."
+      });
+    }
+
     const progress = await createProgress({
       session: sessionId,
       patient: session.patient,
       psychologist: req.user._id,
+      role: req.user.role,
       moodScore,
       anxietyLevel,
       stressLevel,
@@ -85,23 +115,14 @@ exports.addSessionProgress = async (req, res) => {
       notes,
       warningTriggered
     });
-    // 🚨 AUTO REFERRAL TRIGGER
-    if (warningTriggered) {
-    await createAutoReferral({
-    patient: session.patient,
-    psychologist: req.user._id,
-    session: sessionId
-    });
-    }
 
     res.status(201).json({
       success: true,
       message: warningTriggered
-        ? "Severe condition detected. Consider referral."
+        ? "Severe condition detected. Review the warning and decide whether to refer this patient."
         : "Session progress saved",
       data: progress
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -110,15 +131,63 @@ exports.addSessionProgress = async (req, res) => {
   }
 };
 
+exports.deleteSessionProgress = async (req, res) => {
+  try {
+    if (
+      req.user.role !== "psychologist" &&
+      req.user.role !== "clinicalpsychologist"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Only doctors can delete session progress"
+      });
+    }
 
-// ================= GET PATIENT PROGRESS =================
+    const progress = await getProgressById(req.params.progressId);
+
+    if (!progress) {
+      return res.status(404).json({
+        success: false,
+        message: "Progress entry not found"
+      });
+    }
+
+    const patient = await User.findById(progress.patient);
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found"
+      });
+    }
+
+    const hasAccess = verifyDoctorAccess(progress.session, req.user, patient);
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to delete this progress entry"
+      });
+    }
+
+    await deleteProgressById(progress._id);
+
+    res.json({
+      success: true,
+      message: "Progress entry deleted successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 exports.getPatientProgress = async (req, res) => {
   try {
-
     const patientId = req.params.patientId;
 
-    // 🔒 Patient can only see their own data
     if (
       req.user.role === "patient" &&
       req.user._id.toString() !== patientId
@@ -129,29 +198,18 @@ exports.getPatientProgress = async (req, res) => {
       });
     }
 
-    let query = { patient: patientId };
+    const query = { patient: patientId };
 
-    // 🔒 Psychologist sees only their records
     if (req.user.role === "psychologist") {
       query.psychologist = req.user._id;
     }
 
-    // 🔍 Get data from service
     const progress = await getProgressByQuery(query);
-
-    if (!progress.length) {
-      return res.json({
-        success: true,
-        message: "No session progress found for this patient",
-        data: []
-      });
-    }
 
     res.json({
       success: true,
       data: progress
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,

@@ -5,45 +5,39 @@ const {
   createReferral,
   respondToReferral,
   getMyReferrals,
-  acceptReferral
+  acceptReferral,
+  getAvailableClinicalPsychologists
 } = require("../controllers/referralController");
-
 const { protect } = require("../middleware/authMiddleware");
 const { authorizeRoles } = require("../middleware/roleMiddleware");
 
+router.post("/", protect, authorizeRoles("psychologist"), createReferral);
 
-// 🔹 Create referral (auto/manual)
-router.post(
-  "/",
+router.get(
+  "/clinical-options",
   protect,
   authorizeRoles("psychologist"),
-  createReferral
+  getAvailableClinicalPsychologists
 );
 
-
-// 🔹 Psychologist responds (approve/reject)
 router.put(
   "/respond/:referralId",
   protect,
-  authorizeRoles("psychologist"),
+  authorizeRoles("psychologist", "clinicalpsychologist"),
   respondToReferral
 );
 
-
-// 🔹 Get referrals (psychologist / clinical)
 router.get(
   "/my",
   protect,
-  authorizeRoles("psychologist", "clinicalPsychologist"),
+  authorizeRoles("psychologist", "clinicalpsychologist"),
   getMyReferrals
 );
 
-
-// 🔹 Clinical accepts referral
 router.put(
   "/accept/:id",
   protect,
-  authorizeRoles("clinicalPsychologist"),
+  authorizeRoles("clinicalpsychologist"),
   acceptReferral
 );
 
