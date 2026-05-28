@@ -142,10 +142,6 @@ exports.updateSession = async (req, res) => {
 
     const allowedUpdates = {};
 
-    if (req.body.status) {
-      allowedUpdates.status = req.body.status;
-    }
-
     if (Object.prototype.hasOwnProperty.call(req.body, "notes")) {
       if (session.status !== "completed") {
         return res.status(400).json({

@@ -3,13 +3,13 @@ const cors = require("cors");
 
 const app = express();
 
-// ✅ CORS (IMPORTANT)
+// CORS
 app.use(cors());
 
-// ✅ Body parser
+// Body parser
 app.use(express.json());
 
-// ✅ Routes
+// Routes
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
@@ -28,11 +28,9 @@ app.use("/api/admin", adminRoutes);
 const patientRoutes = require("./routes/patientRoutes");
 app.use("/api/patients", patientRoutes);
 
-// ✅ Test route
+// Test route
 app.get("/", (req, res) => {
   res.json({ message: "CalmCare API is running" });
 });
 
 module.exports = app;
-
-

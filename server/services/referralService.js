@@ -1,17 +1,17 @@
 const Referral = require("../models/referralModel");
 
-exports.createAutoReferral = async ({ patient, psychologist, session }) => {
+exports.createAutoReferral = async ({
+  patient,
+  psychologist,
+  session,
+  clinicalPsychologist
+}) => {
   return await Referral.create({
     patient,
     psychologist,
+    clinicalPsychologist: clinicalPsychologist || null,
     session,
     reason: "High severity detected",
     status: "pending"
-  });
-};
-
-exports.updateReferralStatus = async (referralId, data) => {
-  return await Referral.findByIdAndUpdate(referralId, data, {
-    new: true
   });
 };

@@ -104,7 +104,7 @@ exports.createReferral = async (req, res) => {
     const referral = await Referral.create({
       patient,
       psychologist: req.user._id,
-      clinicalPsychologist: clinicalPsychologist || null,
+      clinicalPsychologist: recommendedDoctor._id,
       session,
       reason: reason.trim(),
       status: "pending"
@@ -145,7 +145,14 @@ exports.getAvailableClinicalPsychologists = async (req, res) => {
 exports.respondToReferral = async (req, res) => {
   try {
     const { referralId } = req.params;
-    const { status, comments, clinicalPsychologist } = req.body;
+    const { status, comments } = req.body;
+
+    if (status !== "rejected") {
+      return res.status(400).json({
+        success: false,
+        message: "This endpoint only supports rejected referrals"
+      });
+    }
 
     const referral = await Referral.findById(referralId);
 
@@ -156,57 +163,25 @@ exports.respondToReferral = async (req, res) => {
       });
     }
 
-    if (req.user.role === "psychologist") {
-      if (referral.psychologist.toString() !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: "Not authorized"
-        });
-      }
-
-      if (status === "accepted" && !clinicalPsychologist) {
-        return res.status(400).json({
-          success: false,
-          message: "Clinical psychologist required"
-        });
-      }
-
-      referral.status = status;
-      referral.comments = comments;
-      referral.clinicalPsychologist = clinicalPsychologist || null;
+    if (
+      referral.clinicalPsychologist &&
+      referral.clinicalPsychologist.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized"
+      });
     }
 
-    if (req.user.role === "clinicalpsychologist") {
-      if (
-        referral.clinicalPsychologist &&
-        referral.clinicalPsychologist.toString() !== req.user._id.toString()
-      ) {
-        return res.status(403).json({
-          success: false,
-          message: "Not authorized"
-        });
-      }
-
-      referral.status = status;
-      referral.comments = comments;
-      referral.clinicalPsychologist = req.user._id;
-
-      if (status === "rejected") {
-        await referral.save();
-
-        return res.json({
-          success: true,
-          message: "Referral rejected",
-          data: referral
-        });
-      }
-    }
+    referral.status = "rejected";
+    referral.comments = comments?.trim() || "";
+    referral.clinicalPsychologist = req.user._id;
 
     await referral.save();
 
     res.json({
       success: true,
-      message: "Referral updated",
+      message: "Referral rejected",
       data: referral
     });
   } catch (error) {

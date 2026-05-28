@@ -23,7 +23,7 @@ router.get(
 router.put(
   "/respond/:referralId",
   protect,
-  authorizeRoles("psychologist", "clinicalpsychologist"),
+  authorizeRoles("clinicalpsychologist"),
   respondToReferral
 );
 
