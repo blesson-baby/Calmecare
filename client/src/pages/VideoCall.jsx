@@ -410,7 +410,7 @@ function VideoCall() {
             <div className="video-call-topbar-left">
               <p className="video-call-room-title">
                 {session
-                  ? `${session.psychologist?.name || "Clinician"} • ${session.patient?.name || "Patient"}`
+                  ? `${session.psychologist?.name || "Clinician"} - ${session.patient?.name || "Patient"}`
                   : "Consultation room"}
               </p>
               <p className="video-call-room-subtitle">{status}</p>

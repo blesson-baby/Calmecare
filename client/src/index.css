@@ -1371,6 +1371,35 @@ button {
     align-items: start;
   }
 
+  .video-call-remote {
+    width: min(100%, 560px);
+    aspect-ratio: 9 / 16;
+    min-height: 0;
+    justify-self: center;
+  }
+
+  .video-call-video {
+    object-fit: contain;
+    background:
+      radial-gradient(circle at top, rgba(63, 134, 220, 0.22), rgba(11, 26, 48, 0.92));
+  }
+
+  .video-call-pip {
+    inset: auto 18px 110px auto;
+    width: clamp(120px, 14vw, 180px);
+    aspect-ratio: 4 / 5;
+  }
+
+  .video-call-controls {
+    inset: auto 18px 18px 18px;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .video-call-topbar {
+    inset: 18px 18px auto 18px;
+  }
+
   .video-call-details {
     justify-self: end;
   }
